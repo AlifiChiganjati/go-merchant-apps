@@ -11,7 +11,7 @@
 
 **Technologies**:
 
-- Backend: Golang(std lib)
+- Backend: Golang(gin)
 - Database: PostgreSQL
 - Query: Raw-Query
 - Version Control: Git and Github
@@ -36,7 +36,7 @@
 
 - User Management
   - [ ] Auth Login User
-  - [ ] Auth Register User
+  - [x] Auth Register User
 
 - Product Management
   - [ ] View All Products

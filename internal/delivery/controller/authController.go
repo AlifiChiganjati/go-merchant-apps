@@ -6,6 +6,7 @@ import (
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/dto"
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/usecase"
 	"github.com/AlifiChiganjati/go-merchant-apps/pkg/response"
+	"github.com/RifaldyAldy/diamond-wallet/utils/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,6 +22,11 @@ func NewAuthController(ac usecase.AuthUsecase, rg *gin.RouterGroup) *AuthControl
 		ac: ac,
 		rg: rg,
 	}
+}
+
+func (acon *AuthController) Route() {
+	acon.rg.POST("/register", acon.registerHandler)
+	acon.rg.POST("/login", acon.loginHandler)
 }
 
 func (acon *AuthController) registerHandler(c *gin.Context) {
@@ -45,6 +51,20 @@ func (acon *AuthController) registerHandler(c *gin.Context) {
 	response.SendCreateResponse(c, "User Berhasil dibuat!", resp)
 }
 
-func (acon *AuthController) Route() {
-	acon.rg.POST("/register", acon.registerHandler)
+func (acon *AuthController) loginHandler(c *gin.Context) {
+	var payload dto.LoginRequestDto
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		common.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	loginData, err := acon.ac.LoginUser(payload)
+	if err != nil {
+		if err.Error() == "1" {
+			common.SendErrorResponse(c, http.StatusForbidden, "Password salah")
+			return
+		}
+		common.SendErrorResponse(c, http.StatusForbidden, err.Error())
+		return
+	}
+	common.SendSingleResponse(c, "success", loginData)
 }

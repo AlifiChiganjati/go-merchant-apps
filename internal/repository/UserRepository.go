@@ -11,6 +11,7 @@ import (
 type (
 	UserRepository interface {
 		Create(payload dto.UserRequestDto) (models.User, error)
+		GetByEmail(email string) (models.User, error)
 	}
 	userRepository struct {
 		db *sql.DB
@@ -45,6 +46,30 @@ func (u *userRepository) Create(payload dto.UserRequestDto) (models.User, error)
 		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
+	)
+	if err != nil {
+		return models.User{}, err
+	}
+	return user, nil
+}
+
+func (u *userRepository) GetByEmail(email string) (models.User, error) {
+	var user models.User
+	err := u.db.QueryRow(` 
+SELECT 
+		id, fullname, email, password, role 
+FROM 
+		users 
+WHERE 
+		email=$1
+		`,
+		email,
+	).Scan(
+		&user.ID,
+		&user.Fullname,
+		&user.Email,
+		&user.Password,
+		&user.Role,
 	)
 	if err != nil {
 		return models.User{}, err
