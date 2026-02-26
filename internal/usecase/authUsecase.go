@@ -3,8 +3,6 @@ package usecase
 import (
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/dto"
@@ -20,12 +18,22 @@ type (
 		LoginUser(payload dto.LoginRequestDto) (dto.LoginResponseDto, error)
 	}
 	authUsecase struct {
-		repo repository.UserRepository
+		repo       repository.UserRepository
+		jwtService *jwttoken.JWTService
+		tokenTTL   time.Duration
 	}
 )
 
-func NewAuthUsecase(repo repository.UserRepository) AuthUsecase {
-	return &authUsecase{repo: repo}
+func NewAuthUsecase(
+	repo repository.UserRepository,
+	jwtService *jwttoken.JWTService,
+	tokenTTL time.Duration,
+) AuthUsecase {
+	return &authUsecase{
+		repo:       repo,
+		jwtService: jwtService,
+		tokenTTL:   tokenTTL,
+	}
 }
 
 func (uc *authUsecase) CreateUser(payload dto.UserRequestDto) (models.User, error) {
@@ -60,16 +68,9 @@ func (uc *authUsecase) LoginUser(payload dto.LoginRequestDto) (dto.LoginResponse
 		return dto.LoginResponseDto{}, errors.New("invalid email or password")
 	}
 
-	loginExpDuration, err := strconv.Atoi(os.Getenv("TOKEN_LIFE_TIME"))
-	if err != nil {
-		return dto.LoginResponseDto{}, err
-	}
+	expiredAt := time.Now().Add(uc.tokenTTL).Unix()
 
-	expiredAt := time.Now().
-		Add(time.Duration(loginExpDuration) * time.Minute).
-		Unix()
-
-	accessToken, err := jwttoken.GenerateTokenJwt(
+	accessToken, err := uc.jwtService.GenerateToken(
 		userData.ID,
 		userData.Fullname,
 		userData.Role,

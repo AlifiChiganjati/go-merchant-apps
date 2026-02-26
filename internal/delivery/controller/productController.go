@@ -11,19 +11,21 @@ import (
 )
 
 type ProductController struct {
-	pu usecase.ProductUsecase
-	rg *gin.RouterGroup
+	pu         usecase.ProductUsecase
+	rg         *gin.RouterGroup
+	jwtService *jwttoken.JWTService
 }
 
 func NewProductController(
 	pu usecase.ProductUsecase,
 	rg *gin.RouterGroup,
+	jwtService *jwttoken.JWTService,
 ) *ProductController {
-	return &ProductController{pu: pu, rg: rg}
+	return &ProductController{pu: pu, rg: rg, jwtService: jwtService}
 }
 
 func (con *ProductController) Route() {
-	con.rg.POST("/product", jwttoken.JWTAuth("merchant"), con.addProductHandler)
+	con.rg.POST("/product", con.jwtService.JWTAuth("merchant"), con.addProductHandler)
 	con.rg.POST("/products", con.productGetByNameHandler)
 }
 

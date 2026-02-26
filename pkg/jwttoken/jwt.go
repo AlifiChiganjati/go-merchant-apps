@@ -8,14 +8,19 @@ import (
 	"time"
 
 	"github.com/AlifiChiganjati/go-merchant-apps/pkg/response"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
-type JwtClaim struct {
-	jwt.StandardClaims
-	DataClaims JwtClaims `json:"data"`
+type JWTService struct {
+	issuer string
+	key    []byte
 }
+type JwtClaim struct {
+	DataClaims JwtClaims `json:"data"`
+	jwt.RegisteredClaims
+}
+
 type JwtClaims struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
@@ -25,84 +30,90 @@ type JwtClaims struct {
 var (
 	appName          = os.Getenv("APP_NAME")
 	jwtSigningMethod = jwt.SigningMethodHS256
-	jwtSignatureKey  = []byte(os.Getenv("TOKEN_KEY"))
 )
 
-func GenerateTokenJwt(id, name, role string, expiredAt int64) (string, error) {
+func NewJWTService(issuer string, key []byte) *JWTService {
+	return &JWTService{
+		issuer: issuer,
+		key:    key,
+	}
+}
+
+func getJWTKey() []byte {
+	return []byte(os.Getenv("TOKEN_KEY"))
+}
+
+func (j *JWTService) GenerateToken(id, name, role string, expiredAt int64) (string, error) {
+	if len(j.key) == 0 {
+		return "", fmt.Errorf("jwt key empty")
+	}
+
 	claims := JwtClaim{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:    appName,
-			ExpiresAt: expiredAt, // expayet waktu login
-		},
 		DataClaims: JwtClaims{
 			ID:   id,
 			Name: name,
 			Role: role,
 		},
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    j.issuer,
+			ExpiresAt: jwt.NewNumericDate(time.Unix(expiredAt, 0)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwtSigningMethod, claims)
-	signedToken, err := token.SignedString(jwtSignatureKey)
-	if err != nil {
-		return "", err
-	}
-	return signedToken, nil
+	return token.SignedString(j.key)
 }
 
-func JWTAuth(roles ...string) gin.HandlerFunc {
+func (j *JWTService) JWTAuth(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		fmt.Println(authHeader)
-		if !strings.Contains(authHeader, "Bearer") {
-			response.SendErrorResponse(c, http.StatusForbidden, "Invalid Token")
+		authHeader := strings.TrimSpace(c.GetHeader("Authorization"))
+		if authHeader == "" {
+			response.SendErrorResponse(c, http.StatusUnauthorized, "Authorization header required")
 			c.Abort()
 			return
 		}
 
-		// jwtSignatureKey := []byte(os.Getenv("SIGNATURE_KEY"))
-		tokenString := strings.ReplaceAll(authHeader, "Bearer ", "")
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			response.SendErrorResponse(c, http.StatusUnauthorized, "Invalid Authorization format")
+			c.Abort()
+			return
+		}
+
+		tokenString := parts[1]
 		claims := &JwtClaim{}
+
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
-			return jwtSignatureKey, nil
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method")
+			}
+			return j.key, nil
 		})
-		if err != nil {
-			response.SendErrorResponse(c, http.StatusInternalServerError, err.Error())
+
+		if err != nil || !token.Valid {
+			response.SendErrorResponse(c, http.StatusUnauthorized, "Invalid or expired token")
 			c.Abort()
 			return
 		}
 
-		if !token.Valid {
-			response.SendErrorResponse(c, http.StatusUnauthorized, "Unaunthorized user")
-			c.Abort()
-			return
-		}
-
-		expiredAt := claims.ExpiresAt
-		if time.Now().Unix() > expiredAt {
-			response.SendErrorResponse(c, http.StatusUnauthorized, "Expired Token")
-			c.Abort()
-			return
-		}
-
-		// validation role
-
-		validRole := false
+		// Role check
 		if len(roles) > 0 {
+			validRole := false
 			for _, role := range roles {
 				if role == claims.DataClaims.Role {
 					validRole = true
 					break
 				}
 			}
-		}
-		if !validRole {
-			response.SendErrorResponse(c, http.StatusForbidden, "You dont have permission")
-			c.Abort()
-			return
+			if !validRole {
+				response.SendErrorResponse(c, http.StatusForbidden, "You don't have permission")
+				c.Abort()
+				return
+			}
 		}
 
 		c.Set("claims", claims)
-
 		c.Next()
 	}
 }

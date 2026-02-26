@@ -10,34 +10,26 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MerchantController struct {
-	mc         usecase.MerchantUsecase
+type CartController struct {
+	cu         usecase.CartUsecase
 	rg         *gin.RouterGroup
 	jwtService *jwttoken.JWTService
 }
 
-func NewMerchantController(
-	mc usecase.MerchantUsecase,
-	rg *gin.RouterGroup,
-	jwtService *jwttoken.JWTService,
-) *MerchantController {
-	return &MerchantController{
-		mc:         mc,
+func NewCartController(cu usecase.CartUsecase, rg *gin.RouterGroup, jwtService *jwttoken.JWTService) *CartController {
+	return &CartController{
+		cu:         cu,
 		rg:         rg,
 		jwtService: jwtService,
 	}
 }
 
-func (con *MerchantController) Route() {
-	con.rg.POST(
-		"/merchants",
-		con.jwtService.JWTAuth("customer"),
-		con.createMerchantHandler,
-	)
+func (con *CartController) Route() {
+	con.rg.POST("/cart", con.jwtService.JWTAuth("merchant", "customer"), con.createCartHandler)
 }
 
-func (con *MerchantController) createMerchantHandler(c *gin.Context) {
-	var payload dto.MerchantRequestDto
+func (con *CartController) createCartHandler(c *gin.Context) {
+	var payload dto.CartRequestDto
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		response.SendErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -50,17 +42,11 @@ func (con *MerchantController) createMerchantHandler(c *gin.Context) {
 		return
 	}
 
-	userID := claims.(*jwttoken.JwtClaim).DataClaims.ID
-
-	merchant, err := con.mc.RegisterMerchant(userID, payload)
+	payload.UserID = claims.(*jwttoken.JwtClaim).DataClaims.ID
+	cart, err := con.cu.CreateCart(payload)
 	if err != nil {
 		response.SendErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	resp := dto.MerchantResponseDto{
-		MerchantName:    merchant.MerchantName,
-		MerchantAddress: merchant.MerchantAddress,
-	}
-
-	response.SendSingleResponse(c, "success", resp)
+	response.SendSingleResponse(c, "success", cart)
 }

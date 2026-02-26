@@ -8,13 +8,15 @@ import (
 	"github.com/AlifiChiganjati/go-merchant-apps/config"
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/delivery/controller"
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/di"
+	"github.com/AlifiChiganjati/go-merchant-apps/pkg/jwttoken"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	engine *gin.Engine
-	host   string
-	uc     di.UsecaseDI
+	engine     *gin.Engine
+	host       string
+	uc         di.UsecaseDI
+	jwtService *jwttoken.JWTService
 }
 
 func NewServer() *Server {
@@ -22,21 +24,28 @@ func NewServer() *Server {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	jwtService := jwttoken.NewJWTService(
+		cfg.TokenConfig.IssuerName,
+		cfg.TokenConfig.JwtSignatureKey,
+	)
 	infra, err := di.NewInfraDI(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 	repo := di.NewRepoDI(infra)
-	uc := di.NewUseCaseDI(repo)
-
+	uc := di.NewUseCaseDI(
+		repo,
+		jwtService,
+		cfg.TokenConfig.JwtLifeTime,
+	)
 	engine := gin.Default()
-	host := fmt.Sprintf(":%s", cfg.ApiPort)
+	host := fmt.Sprintf(":%s", cfg.APIPort)
 
 	return &Server{
-		engine: engine,
-		host:   host,
-		uc:     uc,
+		engine:     engine,
+		host:       host,
+		uc:         uc,
+		jwtService: jwtService,
 	}
 }
 
@@ -50,8 +59,9 @@ func (s *Server) setupRoutes() {
 	})
 
 	controller.NewAuthController(s.uc.AuthUsecase(), rg).Route()
-	controller.NewMerchantController(s.uc.MerchantUsecase(), rg).Route()
-	controller.NewProductController(s.uc.ProductUsecase(), rg).Route()
+	controller.NewMerchantController(s.uc.MerchantUsecase(), rg, s.jwtService).Route()
+	controller.NewProductController(s.uc.ProductUsecase(), rg, s.jwtService).Route()
+	controller.NewCartController(s.uc.CartUsecase(), rg, s.jwtService).Route()
 }
 
 func (s *Server) Run() {

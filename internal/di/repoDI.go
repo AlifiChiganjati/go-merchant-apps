@@ -7,6 +7,7 @@ type (
 		UserRepo() repository.UserRepository
 		MerchantRepo() repository.MerchantRepository
 		ProductRepo() repository.ProductRepostory
+		CartRepo() repository.CartRepository
 	}
 	repoDI struct {
 		infra InfraDI
@@ -27,4 +28,8 @@ func (r *repoDI) MerchantRepo() repository.MerchantRepository {
 
 func (r *repoDI) ProductRepo() repository.ProductRepostory {
 	return repository.NewProductRepository(r.infra.Conn())
+}
+
+func (r *repoDI) CartRepo() repository.CartRepository {
+	return repository.NewCartRepository(r.infra.Conn())
 }

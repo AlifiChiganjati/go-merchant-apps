@@ -1,19 +1,20 @@
 package config
 
 import (
-	"bufio"
 	"errors"
-	"log"
 	"os"
-	"strings"
+	"strconv"
+	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type (
-	ApiConfig struct {
-		ApiPort string
+	APIConfig struct {
+		APIPort string
 	}
 
-	DbConfig struct {
+	DBConfig struct {
 		Host     string
 		Port     string
 		User     string
@@ -21,10 +22,15 @@ type (
 		Name     string
 		Driver   string
 	}
-
+	TokenConfig struct {
+		IssuerName      string
+		JwtSignatureKey []byte
+		JwtLifeTime     time.Duration
+	}
 	Config struct {
-		ApiConfig
-		DbConfig
+		APIConfig
+		DBConfig
+		TokenConfig
 	}
 )
 
@@ -38,15 +44,14 @@ func NewConfig() (*Config, error) {
 }
 
 func (c *Config) readConfig() error {
-	if err := c.setENV(); err != nil {
+	if err := godotenv.Load(); err != nil {
 		return err
 	}
 
-	c.ApiConfig = ApiConfig{
-		ApiPort: os.Getenv("API_PORT"),
+	c.APIConfig = APIConfig{
+		APIPort: os.Getenv("API_PORT"),
 	}
-
-	c.DbConfig = DbConfig{
+	c.DBConfig = DBConfig{
 		Host:     os.Getenv("DB_HOST"),
 		Port:     os.Getenv("DB_PORT"),
 		User:     os.Getenv("DB_USER"),
@@ -54,48 +59,22 @@ func (c *Config) readConfig() error {
 		Name:     os.Getenv("DB_NAME"),
 		Driver:   os.Getenv("DB_DRIVER"),
 	}
+	lifetimeStr := os.Getenv("TOKEN_LIFE_TIME")
 
-	if c.ApiPort == "" {
-		return errors.New("enviroment required")
-	}
-	return nil
-}
-
-func (c *Config) setENV() error {
-	envFile, err := os.Open(".env")
+	lifetimeInt, err := strconv.Atoi(lifetimeStr)
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer envFile.Close()
-
-	scanner := bufio.NewScanner(envFile)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		envVar := strings.SplitN(line, "=", 2)
-
-		if len(envVar) != 2 {
-			log.Printf("Invalid line in .env file: %s", line)
-			continue
-		}
-
-		key := strings.TrimSpace(envVar[0])
-		value := strings.TrimSpace(envVar[1])
-
-		if key == "" {
-			log.Printf("Empty key in .env file: %s", line)
-			continue
-		}
-
-		os.Setenv(key, value)
+		return err
 	}
 
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+	jwtDuration := time.Duration(lifetimeInt) * time.Hour
+	c.TokenConfig = TokenConfig{
+		IssuerName:      os.Getenv("TOKEN_ISSUE_NAME"),
+		JwtSignatureKey: []byte(os.Getenv("TOKEN_KEY")),
+		JwtLifeTime:     jwtDuration,
+	}
+	if c.APIPort == "" || c.Host == "" || c.Port == "" || c.Name == "" || c.User == "" || c.IssuerName == "" ||
+		len(c.JwtSignatureKey) == 0 || c.JwtLifeTime == 0 {
+		return errors.New("environment required")
 	}
 	return nil
 }

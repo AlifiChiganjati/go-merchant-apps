@@ -37,10 +37,15 @@ CREATE TABLE IF NOT EXISTS "cart"(
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID  REFERENCES users(id),
   product_id UUID REFERENCES products(id),
-  quantity INTEGER NOT NULL,
+  quantity INTEGER NOT NULL CHECK (quantity > 0),
   created_at TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP  DEFAULT CURRENT_TIMESTAMP
+  updated_at TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
 );
+
+ALTER TABLE cart 
+ADD CONSTRAINT unique_cart_product UNIQUE (user_id, product_id);
 
 CREATE TABLE IF NOT EXISTS "transactions" (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
