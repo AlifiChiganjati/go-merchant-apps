@@ -6,6 +6,7 @@ type (
 	UsecaseDI interface {
 		AuthUsecase() usecase.AuthUsecase
 		MerchantUsecase() usecase.MerchantUsecase
+		ProductUsecase() usecase.ProductUsecase
 	}
 
 	usecaseDI struct {
@@ -23,4 +24,8 @@ func (uc *usecaseDI) AuthUsecase() usecase.AuthUsecase {
 
 func (uc *usecaseDI) MerchantUsecase() usecase.MerchantUsecase {
 	return usecase.NewMerchantUsecase(uc.repo.MerchantRepo())
+}
+
+func (uc *usecaseDI) ProductUsecase() usecase.ProductUsecase {
+	return usecase.NewProductUsecase(uc.repo.ProductRepo())
 }

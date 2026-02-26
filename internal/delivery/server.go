@@ -3,6 +3,7 @@ package delivery
 import (
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/AlifiChiganjati/go-merchant-apps/config"
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/delivery/controller"
@@ -41,14 +42,16 @@ func NewServer() *Server {
 
 func (s *Server) setupRoutes() {
 	rg := s.engine.Group("/api/v1")
-	rg.GET("/", func(c *gin.Context) {
+	rg.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "pong",
+			"status":  http.StatusOK,
+			"message": "server is running",
 		})
 	})
 
 	controller.NewAuthController(s.uc.AuthUsecase(), rg).Route()
 	controller.NewMerchantController(s.uc.MerchantUsecase(), rg).Route()
+	controller.NewProductController(s.uc.ProductUsecase(), rg).Route()
 }
 
 func (s *Server) Run() {
