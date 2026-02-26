@@ -41,7 +41,7 @@
 - Product Management
   - [ ] View All Products
   - [x] add Product middleware role admin
-  - [ ] view product by id
+  - [ ] view product by name
 
 - Cart Management
   - [ ] add product to cart

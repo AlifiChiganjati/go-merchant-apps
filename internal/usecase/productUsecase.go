@@ -9,6 +9,7 @@ import (
 type (
 	ProductUsecase interface {
 		CreateProduct(userID string, payload dto.ProductRequestDto) (models.Product, error)
+		ProductGetByName(name string, limit, offset int) ([]models.Product, int, error)
 	}
 	productUsecase struct {
 		repo repository.ProductRepostory
@@ -25,4 +26,18 @@ func (uc *productUsecase) CreateProduct(userID string, payload dto.ProductReques
 		return models.Product{}, err
 	}
 	return product, nil
+}
+
+func (uc *productUsecase) ProductGetByName(name string, limit, offset int) ([]models.Product, int, error) {
+	products, err := uc.repo.GetByName(name, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	total, err := uc.repo.CountByName(name)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return products, total, nil
 }

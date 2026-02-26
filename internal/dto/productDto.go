@@ -11,4 +11,9 @@ type (
 		CreatedAt   time.Time `json:"created_at"`
 		UpdatedAt   time.Time `json:"updated_at"`
 	}
+	ProductSearchRequestDto struct {
+		Name   string `json:"name"`
+		Limit  int    `json:"limit"`
+		Offset int    `json:"offset"`
+	}
 )

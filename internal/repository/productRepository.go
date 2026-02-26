@@ -12,6 +12,8 @@ import (
 type (
 	ProductRepostory interface {
 		Create(userID string, payload dto.ProductRequestDto) (models.Product, error)
+		GetByName(name string, limit, offset int) ([]models.Product, error)
+		CountByName(name string) (int, error)
 	}
 	productRepository struct {
 		db *sql.DB
@@ -66,4 +68,66 @@ func (repo *productRepository) Create(userID string, payload dto.ProductRequestD
 	}
 
 	return product, nil
+}
+
+func (repo *productRepository) GetByName(name string, limit, offset int) ([]models.Product, error) {
+	rows, err := repo.db.Query(`
+		SELECT 
+			id, merchant_id, name, price, description, point, created_at, updated_at
+		FROM products
+		WHERE name ILIKE $1
+		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
+	`,
+		"%"+name+"%",
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []models.Product
+
+	for rows.Next() {
+		var p models.Product
+		err := rows.Scan(
+			&p.ID,
+			&p.MerchantID,
+			&p.Name,
+			&p.Price,
+			&p.Description,
+			&p.Point,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, p)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+func (repo *productRepository) CountByName(name string) (int, error) {
+	var total int
+
+	err := repo.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM products
+		WHERE name ILIKE $1
+	`,
+		"%"+name+"%",
+	).Scan(&total)
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
 }
