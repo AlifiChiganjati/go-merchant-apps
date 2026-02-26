@@ -3,7 +3,6 @@ module github.com/AlifiChiganjati/go-merchant-apps
 go 1.25.7
 
 require (
-	github.com/RifaldyAldy/diamond-wallet v0.0.0-20240409113334-65c920f5dde2
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-gonic/gin v1.11.0
 	github.com/lib/pq v1.11.2

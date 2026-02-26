@@ -5,6 +5,7 @@ import "github.com/AlifiChiganjati/go-merchant-apps/internal/usecase"
 type (
 	UsecaseDI interface {
 		AuthUsecase() usecase.AuthUsecase
+		MerchantUsecase() usecase.MerchantUsecase
 	}
 
 	usecaseDI struct {
@@ -16,6 +17,10 @@ func NewUseCaseDI(repo RepoDI) UsecaseDI {
 	return &usecaseDI{repo: repo}
 }
 
-func (u *usecaseDI) AuthUsecase() usecase.AuthUsecase {
-	return usecase.NewAuthUsecase(u.repo.UserRepo())
+func (uc *usecaseDI) AuthUsecase() usecase.AuthUsecase {
+	return usecase.NewAuthUsecase(uc.repo.UserRepo())
+}
+
+func (uc *usecaseDI) MerchantUsecase() usecase.MerchantUsecase {
+	return usecase.NewMerchantUsecase(uc.repo.MerchantRepo())
 }

@@ -48,6 +48,7 @@ func (s *Server) setupRoutes() {
 	})
 
 	controller.NewAuthController(s.uc.AuthUsecase(), rg).Route()
+	controller.NewMerchantController(s.uc.MerchantUsecase(), rg).Route()
 }
 
 func (s *Server) Run() {

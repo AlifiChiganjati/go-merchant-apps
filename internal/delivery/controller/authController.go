@@ -6,7 +6,6 @@ import (
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/dto"
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/usecase"
 	"github.com/AlifiChiganjati/go-merchant-apps/pkg/response"
-	"github.com/RifaldyAldy/diamond-wallet/utils/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,18 +23,18 @@ func NewAuthController(ac usecase.AuthUsecase, rg *gin.RouterGroup) *AuthControl
 	}
 }
 
-func (acon *AuthController) Route() {
-	acon.rg.POST("/register", acon.registerHandler)
-	acon.rg.POST("/login", acon.loginHandler)
+func (con *AuthController) Route() {
+	con.rg.POST("/register", con.registerHandler)
+	con.rg.POST("/login", con.loginHandler)
 }
 
-func (acon *AuthController) registerHandler(c *gin.Context) {
+func (con *AuthController) registerHandler(c *gin.Context) {
 	var payload dto.UserRequestDto
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		response.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	user, err := acon.ac.CreateUser(payload)
+	user, err := con.ac.CreateUser(payload)
 	resp := dto.UserResponseDto{
 		Fullname:    user.Fullname,
 		Email:       user.Email,
@@ -51,20 +50,20 @@ func (acon *AuthController) registerHandler(c *gin.Context) {
 	response.SendCreateResponse(c, "User Berhasil dibuat!", resp)
 }
 
-func (acon *AuthController) loginHandler(c *gin.Context) {
+func (con *AuthController) loginHandler(c *gin.Context) {
 	var payload dto.LoginRequestDto
 	if err := c.ShouldBindJSON(&payload); err != nil {
-		common.SendErrorResponse(c, http.StatusBadRequest, err.Error())
+		response.SendErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	loginData, err := acon.ac.LoginUser(payload)
+	loginData, err := con.ac.LoginUser(payload)
 	if err != nil {
 		if err.Error() == "1" {
-			common.SendErrorResponse(c, http.StatusForbidden, "Password salah")
+			response.SendErrorResponse(c, http.StatusForbidden, "Password salah")
 			return
 		}
-		common.SendErrorResponse(c, http.StatusForbidden, err.Error())
+		response.SendErrorResponse(c, http.StatusForbidden, err.Error())
 		return
 	}
-	common.SendSingleResponse(c, "success", loginData)
+	response.SendSingleResponse(c, "success", loginData)
 }

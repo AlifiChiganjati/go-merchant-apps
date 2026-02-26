@@ -11,7 +11,7 @@ import (
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/models"
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/repository"
 	"github.com/AlifiChiganjati/go-merchant-apps/pkg/encryption"
-	"github.com/RifaldyAldy/diamond-wallet/utils/common"
+	"github.com/AlifiChiganjati/go-merchant-apps/pkg/jwttoken"
 )
 
 type (
@@ -28,7 +28,7 @@ func NewAuthUsecase(repo repository.UserRepository) AuthUsecase {
 	return &authUsecase{repo: repo}
 }
 
-func (au *authUsecase) CreateUser(payload dto.UserRequestDto) (models.User, error) {
+func (uc *authUsecase) CreateUser(payload dto.UserRequestDto) (models.User, error) {
 	hashPassword, err := encryption.HashPassword(payload.Password)
 	if err != nil {
 		return models.User{}, err
@@ -37,20 +37,20 @@ func (au *authUsecase) CreateUser(payload dto.UserRequestDto) (models.User, erro
 		Fullname:    payload.Fullname,
 		Email:       payload.Email,
 		Password:    hashPassword,
-		Role:        "Customer",
+		Role:        "customer",
 		PhoneNumber: payload.PhoneNumber,
 		CreatedAt:   payload.CreatedAt,
 		UpdatedAt:   payload.UpdatedAt,
 	}
-	user, err := au.repo.Create(newUser)
+	user, err := uc.repo.Create(newUser)
 	if err != nil {
 		return models.User{}, fmt.Errorf("failed to create user: %v", err.Error())
 	}
 	return user, nil
 }
 
-func (au *authUsecase) LoginUser(payload dto.LoginRequestDto) (dto.LoginResponseDto, error) {
-	userData, err := au.repo.GetByEmail(payload.Email)
+func (uc *authUsecase) LoginUser(payload dto.LoginRequestDto) (dto.LoginResponseDto, error) {
+	userData, err := uc.repo.GetByEmail(payload.Email)
 	if err != nil {
 		return dto.LoginResponseDto{}, errors.New("invalid email or password")
 	}
@@ -69,7 +69,7 @@ func (au *authUsecase) LoginUser(payload dto.LoginRequestDto) (dto.LoginResponse
 		Add(time.Duration(loginExpDuration) * time.Minute).
 		Unix()
 
-	accessToken, err := common.GenerateTokenJwt(
+	accessToken, err := jwttoken.GenerateTokenJwt(
 		userData.ID,
 		userData.Fullname,
 		userData.Role,

@@ -35,7 +35,7 @@
   - [x] Make sql script
 
 - User Management
-  - [ ] Auth Login User
+  - [x] Auth Login User
   - [x] Auth Register User
 
 - Product Management

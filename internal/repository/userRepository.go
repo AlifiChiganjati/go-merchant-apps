@@ -22,10 +22,10 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
-func (u *userRepository) Create(payload dto.UserRequestDto) (models.User, error) {
+func (repo *userRepository) Create(payload dto.UserRequestDto) (models.User, error) {
 	var user models.User
 
-	err := u.db.QueryRow(`
+	err := repo.db.QueryRow(`
      INSERT INTO users 
 			(fullname,password,email,phone_number,role,created_at,updated_at) 
 		VALUES
@@ -53,9 +53,9 @@ func (u *userRepository) Create(payload dto.UserRequestDto) (models.User, error)
 	return user, nil
 }
 
-func (u *userRepository) GetByEmail(email string) (models.User, error) {
+func (repo *userRepository) GetByEmail(email string) (models.User, error) {
 	var user models.User
-	err := u.db.QueryRow(` 
+	err := repo.db.QueryRow(` 
 SELECT 
 		id, fullname, email, password, role 
 FROM 
