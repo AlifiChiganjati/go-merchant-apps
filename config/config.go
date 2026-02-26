@@ -19,7 +19,7 @@ type (
 		User     string
 		Password string
 		Name     string
-		Drive    string
+		Driver   string
 	}
 
 	Config struct {
@@ -52,7 +52,7 @@ func (c *Config) readConfig() error {
 		User:     os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASSWORD"),
 		Name:     os.Getenv("DB_NAME"),
-		Drive:    os.Getenv("DB_DRIVE"),
+		Driver:   os.Getenv("DB_DRIVER"),
 	}
 
 	if c.ApiPort == "" {

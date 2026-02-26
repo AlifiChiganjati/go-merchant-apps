@@ -3,14 +3,17 @@ package delivery
 import (
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/AlifiChiganjati/go-merchant-apps/config"
+	"github.com/AlifiChiganjati/go-merchant-apps/internal/delivery/controller"
+	"github.com/AlifiChiganjati/go-merchant-apps/internal/di"
+	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
-	mux  *http.ServeMux
-	host string
+	engine *gin.Engine
+	host   string
+	uc     di.UsecaseDI
 }
 
 func NewServer() *Server {
@@ -19,25 +22,37 @@ func NewServer() *Server {
 		log.Fatal(err)
 	}
 
-	mux := http.NewServeMux()
+	infra, err := di.NewInfraDI(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	repo := di.NewRepoDI(infra)
+	uc := di.NewUseCaseDI(repo)
+
+	engine := gin.Default()
 	host := fmt.Sprintf(":%s", cfg.ApiPort)
 
 	return &Server{
-		mux:  mux,
-		host: host,
+		engine: engine,
+		host:   host,
+		uc:     uc,
 	}
 }
 
 func (s *Server) setupRoutes() {
-	s.mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "We got this!")
+	rg := s.engine.Group("/api/v1")
+	rg.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
 	})
+
+	controller.NewAuthController(s.uc.AuthUsecase(), rg).Route()
 }
 
 func (s *Server) Run() {
 	s.setupRoutes()
-	fmt.Println("Server is Running on port", s.host)
-	if err := http.ListenAndServe(s.host, s.mux); err != nil {
+	if err := s.engine.Run(s.host); err != nil {
 		log.Fatal("server can't run")
 	}
 }
