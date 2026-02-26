@@ -54,6 +54,10 @@ func (con *MerchantController) createMerchantHandler(c *gin.Context) {
 		response.SendErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+	resp := dto.MerchantResponseDto{
+		MerchantName:    merchant.MerchantName,
+		MerchantAddress: merchant.MerchantAddress,
+	}
 
-	c.JSON(http.StatusCreated, merchant)
+	response.SendSingleResponse(c, "success", resp)
 }

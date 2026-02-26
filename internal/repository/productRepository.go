@@ -1,0 +1,69 @@
+package repository
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	"github.com/AlifiChiganjati/go-merchant-apps/internal/dto"
+	"github.com/AlifiChiganjati/go-merchant-apps/internal/models"
+)
+
+type (
+	ProductRepostory interface {
+		Create(userID string, payload dto.ProductRequestDto) (models.Product, error)
+	}
+	productRepository struct {
+		db *sql.DB
+	}
+)
+
+func NewProductRepository(db *sql.DB) ProductRepostory {
+	return &productRepository{db: db}
+}
+
+func (repo *productRepository) Create(userID string, payload dto.ProductRequestDto) (models.Product, error) {
+	var merchantID string
+
+	err := repo.db.
+		QueryRow(`SELECT id FROM merchants WHERE user_id = $1`, userID).
+		Scan(&merchantID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Product{}, fmt.Errorf("merchant not found for this user")
+		}
+		return models.Product{}, err
+	}
+
+	var product models.Product
+
+	err = repo.db.QueryRow(`
+		INSERT INTO products 
+			(merchant_id, name, price, description, point, created_at, updated_at)
+		VALUES 
+			($1,$2,$3,$4,$5,$6,$7)
+		RETURNING id, merchant_id, name, price, description, point, created_at, updated_at
+	`,
+		merchantID,
+		payload.Name,
+		payload.Price,
+		payload.Description,
+		payload.Point,
+		time.Now(),
+		time.Now(),
+	).Scan(
+		&product.ID,
+		&product.MerchantID,
+		&product.Name,
+		&product.Price,
+		&product.Description,
+		&product.Point,
+		&product.CreatedAt,
+		&product.UpdatedAt,
+	)
+	if err != nil {
+		return models.Product{}, err
+	}
+
+	return product, nil
+}
