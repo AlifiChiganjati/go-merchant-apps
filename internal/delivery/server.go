@@ -62,6 +62,7 @@ func (s *Server) setupRoutes() {
 	controller.NewMerchantController(s.uc.MerchantUsecase(), rg, s.jwtService).Route()
 	controller.NewProductController(s.uc.ProductUsecase(), rg, s.jwtService).Route()
 	controller.NewCartController(s.uc.CartUsecase(), rg, s.jwtService).Route()
+	controller.NewOrderController(s.uc.OrderUsecase(), rg, s.jwtService).Route()
 }
 
 func (s *Server) Run() {

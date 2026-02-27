@@ -14,6 +14,7 @@ type (
 		Create(userID string, payload dto.ProductRequestDto) (models.Product, error)
 		GetByName(name string, limit, offset int) ([]models.Product, error)
 		CountByName(name string) (int, error)
+		GetByID(id string) (models.Product, error)
 	}
 	productRepository struct {
 		db *sql.DB
@@ -130,4 +131,15 @@ func (repo *productRepository) CountByName(name string) (int, error) {
 	}
 
 	return total, nil
+}
+
+func (db *productRepository) GetByID(id string) (models.Product, error) {
+	var product models.Product
+	err := db.db.QueryRow(`
+SELECT price,point FROM products WHERE id=$1
+		`, id).Scan(&product.Price, &product.Point)
+	if err != nil {
+		return models.Product{}, err
+	}
+	return product, nil
 }

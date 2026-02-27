@@ -61,7 +61,6 @@ func (con *ProductController) productGetByNameHandler(c *gin.Context) {
 		return
 	}
 
-	// default limit biar aman
 	if payload.Limit <= 0 {
 		payload.Limit = 10
 	}

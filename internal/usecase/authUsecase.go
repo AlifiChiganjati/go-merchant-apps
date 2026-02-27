@@ -3,6 +3,7 @@ package usecase
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/AlifiChiganjati/go-merchant-apps/internal/dto"
@@ -37,10 +38,33 @@ func NewAuthUsecase(
 }
 
 func (uc *authUsecase) CreateUser(payload dto.UserRequestDto) (models.User, error) {
+	if len(payload.Fullname) < 3 {
+		return models.User{}, fmt.Errorf("fullname minimal 3 karakter")
+	}
+
+	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+	if !emailRegex.MatchString(payload.Email) {
+		return models.User{}, fmt.Errorf("format email salah %s ?", payload.Email)
+	}
+
+	if len(payload.Password) < 6 {
+		return models.User{}, fmt.Errorf("password terlalu lemah, minimal 6 karakter!")
+	}
+
+	phoneRegex := regexp.MustCompile(`^[0-9]+$`)
+	if !phoneRegex.MatchString(payload.PhoneNumber) {
+		return models.User{}, fmt.Errorf("nomor telepon harus number!")
+	}
+	existingUser, _ := uc.repo.GetByEmail(payload.Email)
+	if existingUser.ID != "" {
+		return models.User{}, errors.New("email already registered")
+	}
+
 	hashPassword, err := encryption.HashPassword(payload.Password)
 	if err != nil {
 		return models.User{}, err
 	}
+
 	newUser := dto.UserRequestDto{
 		Fullname:    payload.Fullname,
 		Email:       payload.Email,

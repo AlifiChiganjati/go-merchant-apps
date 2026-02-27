@@ -48,5 +48,6 @@ func (con *CartController) createCartHandler(c *gin.Context) {
 		response.SendErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
+
 	response.SendSingleResponse(c, "success", cart)
 }

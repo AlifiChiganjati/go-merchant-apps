@@ -13,6 +13,7 @@ type (
 		MerchantUsecase() usecase.MerchantUsecase
 		ProductUsecase() usecase.ProductUsecase
 		CartUsecase() usecase.CartUsecase
+		OrderUsecase() usecase.OrderUsecase
 	}
 
 	usecaseDI struct {
@@ -52,4 +53,8 @@ func (uc *usecaseDI) ProductUsecase() usecase.ProductUsecase {
 
 func (uc *usecaseDI) CartUsecase() usecase.CartUsecase {
 	return usecase.NewCartUsecase(uc.repo.CartRepo())
+}
+
+func (uc *usecaseDI) OrderUsecase() usecase.OrderUsecase {
+	return usecase.NewOrderUsecase(uc.repo.OrderRepo(), uc.repo.ProductRepo())
 }
